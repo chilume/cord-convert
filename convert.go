@@ -1,18 +1,14 @@
 package convert
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
-	"io/ioutil"
 	"net/http"
-	"time"
 )
 
 const (
-	bgsAPIURL         = "https://www.bgs.ac.uk/data/webservices/CoordConvert_LL_BNG.cfc"
 	methodLatLngToBNG = "LatLongtoBNG"
 	methodBNGToLatLng = "BNGtoLatLng"
-	timeout           = 10 * time.Second
 )
 
 //DegMinSec coordinates
@@ -35,46 +31,32 @@ type Response struct {
 
 //LatLnglToBNG converts the latitude and longitude (WGS84) to British National Grid (BNG) cordinates
 //formerly known as the National Grid Reference (NGR)
-func LatLnglToBNG(latitude, longitude float64) (response Response, err error) {
-	// Build the URL
-	urlWithParams := fmt.Sprintf("%v?method=%v&lat=%v&lon=%v", bgsAPIURL, methodLatLngToBNG, latitude, longitude)
-	response, err = get(urlWithParams)
-	return
+func (c *Client) LatLnglToBNG(ctx context.Context, latitude, longitude float64) (*Response, *http.Response, error) {
+	// Build the URL path
+	urlPath := fmt.Sprintf("?method=%v&lat=%v&lon=%v", methodLatLngToBNG, latitude, longitude)
+
+	req, err := c.NewRequest(http.MethodGet, urlPath)
+	if err != nil {
+		return nil, nil, err
+	}
+	r := new(Response)
+	resp, err := c.Do(ctx, req, r)
+
+	return r, resp, err
+
 }
 
 //BNGToLatLng converts the British National Grid (BNG) formerly known as the National Grid Reference (NGR) to
 //latitude and longitude (WGS84) cordinates
-func BNGToLatLng(easting, northing float64) (response Response, err error) {
-	// Build the URL
-	urlWithParams := fmt.Sprintf("%v?method=%v&easting=%v&northing=%v", bgsAPIURL, methodBNGToLatLng, easting, northing)
-	response, err = get(urlWithParams)
-	return
-}
-
-func get(url string) (response Response, err error) {
-	http.DefaultClient.Timeout = timeout
-	resp, err := http.Get(url)
+func (c *Client) BNGToLatLng(ctx context.Context, easting, northing float64) (*Response, *http.Response, error) {
+	// Build the URL path
+	urlPath := fmt.Sprintf("?method=%v&easting=%v&northing=%v", methodBNGToLatLng, easting, northing)
+	req, err := c.NewRequest(http.MethodGet, urlPath)
 	if err != nil {
-		err = fmt.Errorf("error in get request: %v", err)
-		return
+		return nil, nil, err
 	}
-	defer resp.Body.Close()
+	r := new(Response)
+	resp, err := c.Do(ctx, req, r)
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		err = fmt.Errorf("error in reading response from API: %v", err)
-		return
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		err = fmt.Errorf("Response status code %v is not ok", resp.StatusCode)
-		return
-	}
-	var r Response
-	err = json.Unmarshal(body, &r)
-	if err != nil {
-		err = fmt.Errorf("Unable to Unmarshal JSON response: %v", err)
-		return
-	}
-	return r, nil
+	return r, resp, err
 }
