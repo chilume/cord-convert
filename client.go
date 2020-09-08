@@ -10,10 +10,6 @@ import (
 
 const (
 	bgsAPIURL = "https://www.bgs.ac.uk/data/webservices/CoordConvert_LL_BNG.cfc"
-
-//	methodLatLngToBNG = "LatLongtoBNG"
-//	methodBNGToLatLng = "BNGtoLatLng"
-//	timeout           = 10 * time.Second
 )
 
 // Client struct is used to create convert client to make conversion requests
@@ -48,10 +44,7 @@ func NewClient(client *http.Client) *Client {
 // NewRequest creates an API request. A relative URL can be provided in urlPath,
 // in which case it is resolved relative to the BaseURL of the Client.
 func (c *Client) NewRequest(method, urlPath string) (*http.Request, error) {
-
 	u, err := c.BaseURL.Parse(urlPath)
-	//fmt.Println(u.String())
-
 	if err != nil {
 		return nil, err
 	}
@@ -85,8 +78,6 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*htt
 		if err != nil || body == nil {
 			return resp, err
 		}
-
-		//fmt.Println("got response :", resp.StatusCode)
 
 		if v != nil {
 			err = json.Unmarshal(body, v)
